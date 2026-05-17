@@ -183,11 +183,21 @@ function deleteOldImage(imageUrl) {
 // ════════════════════════════════════════════════════════════════
 app.post("/api/users/register", async (req, res) => {
   try {
-    const { telegram_id, first_name, last_name, username, phone } = req.body;
-    if (!telegram_id) return res.status(400).json({ error: "telegram_id kerak" });
+    const { telegram_id, first_name, last_name, username, phone, source } = req.body;
+    
+    // Web orqali kirgan — telegram_id yo'q
+    if (!telegram_id) {
+      const user = await User.create({
+        telegram_id: Date.now(), // vaqtinchalik unique id
+        first_name, last_name, username: username||'', phone,
+        source: source||'web',
+      });
+      return res.json({ success: true, user });
+    }
+    
     const user = await User.findOneAndUpdate(
       { telegram_id },
-      { first_name, last_name, username, phone },
+      { first_name, last_name, username, phone, source: source||'telegram' },
       { upsert: true, new: true }
     );
     res.json({ success: true, user });
